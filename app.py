@@ -59,6 +59,20 @@ def get_time_based_greeting() -> str:
     else:
         return "Good evening! How can I be of service to you today?"
 
+@app.route('/')
+def home():
+    """
+    Root route to confirm the server is live.
+    """
+    return "Welcome to the ShaktiMaangPT backend! API is live and ready to assist you."
+
+@app.route('/favicon.ico')
+def favicon():
+    """
+    Return a no-content response for favicon requests to avoid 404 errors.
+    """
+    return '', 204
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
