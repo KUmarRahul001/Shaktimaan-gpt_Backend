@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
+import json
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +19,9 @@ CORS(app)
 
 # Set up logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# File to save chat conversations
+CHAT_LOG_FILE = "chat_logs.json"
 
 # List of common greeting words
 greetings = ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good evening']
@@ -59,6 +63,33 @@ def get_time_based_greeting() -> str:
     else:
         return "Good evening! How can I be of service to you today?"
 
+def save_chat_to_file(user_message: str, assistant_response: str):
+    """
+    Save chat conversations to a JSON file.
+    
+    :param user_message: The user's message.
+    :param assistant_response: The assistant's response.
+    """
+    chat_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "user_message": user_message,
+        "assistant_response": assistant_response
+    }
+
+    try:
+        if os.path.exists(CHAT_LOG_FILE):
+            with open(CHAT_LOG_FILE, "r") as file:
+                chat_logs = json.load(file)
+        else:
+            chat_logs = []
+
+        chat_logs.append(chat_entry)
+
+        with open(CHAT_LOG_FILE, "w") as file:
+            json.dump(chat_logs, file, indent=4)
+    except Exception as e:
+        logging.error(f"Error saving chat to file: {str(e)}")
+
 @app.route('/')
 def home():
     """
@@ -80,10 +111,16 @@ def chat():
         message = data.get('message')
         chat_history = data.get('history', [])
 
+        if not message:
+            return jsonify({
+                'error': 'Message is required.'
+            }), 400
+
         # Check if the message is a greeting
         if is_greeting(message):
             # Provide a time-based greeting for professionalism
             greeting_message = get_time_based_greeting()
+            save_chat_to_file(message, greeting_message)
             return jsonify({
                 'content': f"ShaktiMaangPT: {greeting_message}",
                 'role': 'assistant',
@@ -104,6 +141,9 @@ def chat():
         
         # Filter out restricted terms like "Google" and "Gemini"
         filtered_response = filter_google_terms(response.text)
+
+        # Save chat to file
+        save_chat_to_file(message, filtered_response)
         
         return jsonify({
             'content': filtered_response,
@@ -113,7 +153,7 @@ def chat():
     
     except Exception as e:
         # Log the error for debugging
-        logging.error(f"Error processing request: {str(e)}")
+        logging.error(f"Error processing request: {str(e)}", exc_info=True)
 
         # Return a friendly "training" message instead of showing an error
         return jsonify({
