@@ -22,10 +22,7 @@ CORS(app)
 # Set up logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Firebase initialization
-cred = credentials.Certificate(os.getenv('FIREBASE_CREDENTIALS_PATH'))  # Path to Firebase credentials JSON
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+
 
 # List of common greeting words
 greetings = ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good evening']
